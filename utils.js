@@ -152,7 +152,25 @@ module.exports.decodeRecordData40 = (recordData)=>{
         .split('\0')
         .shift(),
         recordTime: parseTimeToDate(recordData.readUInt32LE(27)),
+        inOutStatus: null, // To be auto-detected
       }
+
+      // Auto-detect the device type based on specific patterns
+      if (recordData.length >= 32 && recordData[30] <= 1) {
+        // Likely a TFT device: Check-In/Out stored at byte 30
+        record.inOutStatus = recordData[30] === 0 ? 'IN' : 'OUT';
+      } else if (recordData.length >= 33 && recordData[31] <= 1) {
+        // Likely an iFace device: Check-In/Out stored at byte 31
+        record.inOutStatus = recordData[31] === 0 ? 'IN' : 'OUT';
+      } else if (recordData.length >= 34 && recordData[32] <= 1) {
+        // Likely a BW device: Check-In/Out stored at byte 32
+        record.inOutStatus = recordData[32] === 0 ? 'IN' : 'OUT';
+      } else {
+        // Unknown device type or no recognizable status
+        console.warn('Unable to determine inOutStatus for this record.');
+        record.inOutStatus = 'UNKNOWN';
+      }
+
       return record
 }
 
@@ -183,7 +201,13 @@ module.exports.decodeRecordRealTimeLog52 =(recordData)=>{
 
   const attTime = parseHexToTime(recvData.subarray(26,26+6))
 
-  return { userId, attTime}
+  // Auto-detect inOutStatus from specific byte index (assuming it's byte 32 in recvData)
+  let inOutStatus = 'UNKNOWN'; // Default value if the status can't be detected
+  if (recvData.length >= 33) {
+      inOutStatus = recvData[32] === 0 ? 'IN' : 'OUT'; // 0 = IN, 1 = OUT
+  }
+
+  return { userId, attTime, inOutStatus }
 
 }
 
