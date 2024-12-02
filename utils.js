@@ -167,7 +167,7 @@ module.exports.decodeRecordData40 = (recordData)=>{
         record.inOutStatus = recordData[32] === 0 ? 'IN' : 'OUT';
       } else {
         // Unknown device type or no recognizable status
-        console.warn('Unable to determine inOutStatus for this record.');
+        // console.warn('Unable to determine inOutStatus for this record.');
         record.inOutStatus = 'UNKNOWN';
       }
 
