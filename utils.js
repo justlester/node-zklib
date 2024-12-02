@@ -188,28 +188,50 @@ module.exports.decodeRecordRealTimeLog18 = (recordData)=>{
     return {userId , attTime}
 }
 
-module.exports.decodeRecordRealTimeLog52 =(recordData)=>{
-  const payload = removeTcpHeader(recordData)
-        
-  const recvData = payload.subarray(8)
+module.exports.decodeRecordRealTimeLog52 = (recordData) => {
+  // Remove TCP Header
+  const payload = removeTcpHeader(recordData);
 
-  const userId = recvData.slice(0 , 9)
-  .toString('ascii')
-  .split('\0')
-  .shift()
-  
+  // Extract relevant data after the TCP header
+  const recvData = payload.subarray(8);
 
-  const attTime = parseHexToTime(recvData.subarray(26,26+6))
+  // Parse userId (first 9 bytes, ASCII encoded, null-terminated)
+  const userId = recvData
+    .slice(0, 9)
+    .toString('ascii')
+    .split('\0')
+    .shift();
 
-  // Auto-detect inOutStatus from specific byte index (assuming it's byte 32 in recvData)
-  let inOutStatus = 'UNKNOWN'; // Default value if the status can't be detected
-  if (recvData.length >= 33) {
-      inOutStatus = recvData[32] === 0 ? 'IN' : 'OUT'; // 0 = IN, 1 = OUT
+  // Parse attendance time from bytes 26 to 31
+  const attTime = parseHexToTime(recvData.subarray(26, 26 + 6));
+
+  // Auto-detect the device type based on specific patterns
+  let inOutStatus = 'UNKNOWN'; // Default value
+
+  if (recvData.length >= 31) {
+    const statusByteTFT = recvData[30]; // Byte 30 for TFT
+    if (statusByteTFT === 0 || statusByteTFT === 1) {
+      inOutStatus = statusByteTFT === 0 ? 'IN' : 'OUT';
+    }
   }
 
-  return { userId, attTime, inOutStatus }
+  if (recvData.length >= 32) {
+    const statusByteIFace = recvData[31]; // Byte 31 for iFace
+    if (statusByteIFace === 0 || statusByteIFace === 1) {
+      inOutStatus = statusByteIFace === 0 ? 'IN' : 'OUT';
+    }
+  }
 
-}
+  if (recvData.length >= 33) {
+    const statusByteBW = recvData[32]; // Byte 32 for BW
+    if (statusByteBW === 0 || statusByteBW === 1) {
+      inOutStatus = statusByteBW === 0 ? 'IN' : 'OUT';
+    }
+  }
+
+  // Return the extracted and processed data
+  return { userId, attTime, inOutStatus };
+};
 
 module.exports.decodeUDPHeader = (header)=> {
     const commandId = header.readUIntLE(0,2)
