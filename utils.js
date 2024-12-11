@@ -152,23 +152,7 @@ module.exports.decodeRecordData40 = (recordData)=>{
         .split('\0')
         .shift(),
         recordTime: parseTimeToDate(recordData.readUInt32LE(27)),
-        inOutStatus: null, // To be auto-detected
-      }
-
-      // Auto-detect the device type based on specific patterns
-      if (recordData.length >= 32 && recordData[30] <= 1) {
-        // Likely a TFT device: Check-In/Out stored at byte 30
-        record.inOutStatus = recordData[30] === 0 ? 'IN' : 'OUT';
-      } else if (recordData.length >= 33 && recordData[31] <= 1) {
-        // Likely an iFace device: Check-In/Out stored at byte 31
-        record.inOutStatus = recordData[31] === 0 ? 'IN' : 'OUT';
-      } else if (recordData.length >= 34 && recordData[32] <= 1) {
-        // Likely a BW device: Check-In/Out stored at byte 32
-        record.inOutStatus = recordData[32] === 0 ? 'IN' : 'OUT';
-      } else {
-        // Unknown device type or no recognizable status
-        // console.warn('Unable to determine inOutStatus for this record.');
-        record.inOutStatus = 'UNKNOWN';
+        inOutStatus:  recordData[31] === 0 ? 'IN' : 'OUT'
       }
 
       return record
@@ -205,32 +189,8 @@ module.exports.decodeRecordRealTimeLog52 = (recordData) => {
   // Parse attendance time from bytes 26 to 31
   const attTime = parseHexToTime(recvData.subarray(26, 26 + 6));
 
-  // Auto-detect the device type based on specific patterns
-  let inOutStatus = 'UNKNOWN'; // Default value
-
-  if (recvData.length >= 31) {
-    const statusByteTFT = recvData[30]; // Byte 30 for TFT
-    if (statusByteTFT === 0 || statusByteTFT === 1) {
-      inOutStatus = statusByteTFT === 0 ? 'IN' : 'OUT';
-    }
-  }
-
-  if (recvData.length >= 32) {
-    const statusByteIFace = recvData[31]; // Byte 31 for iFace
-    if (statusByteIFace === 0 || statusByteIFace === 1) {
-      inOutStatus = statusByteIFace === 0 ? 'IN' : 'OUT';
-    }
-  }
-
-  if (recvData.length >= 33) {
-    const statusByteBW = recvData[32]; // Byte 32 for BW
-    if (statusByteBW === 0 || statusByteBW === 1) {
-      inOutStatus = statusByteBW === 0 ? 'IN' : 'OUT';
-    }
-  }
-
   // Return the extracted and processed data
-  return { userId, attTime, inOutStatus };
+  return { userId, attTime, inOutStatus: recvData[31] === 0 ? 'IN' : 'OUT' };
 };
 
 module.exports.decodeUDPHeader = (header)=> {
