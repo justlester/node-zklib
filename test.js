@@ -1,51 +1,67 @@
-const ZKLib = require('./zklib')
+const ZKLib = require('./zklib');
+const path = require('path');
+const fs = require('fs');
+
 const test = async () => {
 
-
-    let zkInstance = new ZKLib('192.168.10.250', 4370, 10000, 4000);
+    const ip_address = '192.168.11.249';
+    let zkInstance = new ZKLib(ip_address, 4370, 10000, 4000);
     try {
         // Create socket to machine 
-        await zkInstance.createSocket()
+        await zkInstance.createSocket();
 
 
         // Get general info like logCapacity, user counts, logs count
         // It's really useful to check the status of device 
         console.log(await zkInstance.getInfo());
 
+
+        // Get Realtime logs
         zkInstance.getRealTimeLogs((data) => {
             // do something when some checkin 
-            console.log(data)
+            console.log(data);
         });
 
+        // Get Users
+        // const users = await zkInstance.getUsers();
+        // console.log(users.data);
 
-        const users = await zkInstance.getUsers();
-        console.log(users.data);
+        // Get attendance logs
+        // const attendences = await zkInstance.getAttendances((percent, total) => {
+        //     console.log(`${((percent / total) * 100).toFixed(2)}%`);
+        // });
 
-        const attendences = await zkInstance.getAttendances((percent, total) => {
-            console.log(`${((percent / total) * 100).toFixed(2)}%`);
-        });
+        // const retrieved_logs = attendences.data
+        
+        // .filter((log) =>{
+        //     const logDate = log.recordTime;
+        //     const currentDate = new Date();
+        //     currentDate.setHours(23, 59, 59, 999);
 
-        const today = new Date();
-        const todayDate = today.toISOString().split("T")[0];
+        //     return logDate <= currentDate
+        // })
 
-        console.log({ todayDate });
+        // retrieved_logs.sort((a,b)=> a.recordTime > b.recordTime ? -1 : 1 );
 
-        const retrieved_logs = attendences.data
-            .filter((log) => {
-                const recordDate = log.recordTime.toISOString().split("T")[0]; // Convert to YYYY-MM-DD
-                return recordDate === todayDate && log.deviceUserId === '5141'
-            });
+        // let logFileContent = '';
 
-        retrieved_logs.sort((a, b) => b.recordTime - a.recordTime);
+        // logFileContent = logFileContent + `Data from ${ip_address}\n`;
+        // logFileContent = logFileContent + `Total logs: ${retrieved_logs.length}\n\n`;
 
-        console.log(retrieved_logs.slice(0, 3));
-        console.log(`and ${retrieved_logs.length - 3} records`);
+        // retrieved_logs.forEach((log, index) => {
+        //     logFileContent = logFileContent + `${index + 1}. ${Object.keys(log).map(x => `${x} = ${log[x]}`).join('; ')}\n`;
+        // });
+
+        // const logFilePath = path.join(process.cwd(), 'logs.txt');
+
+        // fs.writeFileSync(logFilePath, logFileContent, { flag: 'w' });
 
     } catch (e) {
+        console.error(e);
         console.error(e?.err || JSON.stringify(e));
+    } finally {
+        // process.exit();
     }
-
-
 }
 
 test()

@@ -189,9 +189,13 @@ module.exports.decodeRecordRealTimeLog52 = (recordData) => {
   // Parse attendance time from bytes 26 to 31
   const attTime = parseHexToTime(recvData.subarray(26, 26 + 6));
 
+  // Determine In/Out status from Byte 25
+  const inOutStatus = recvData[25] === 0 ? 'IN' : recvData[25] === 1 ? 'OUT' : 'UNKNOWN';
+
   // Return the extracted and processed data
-  return { userId, attTime, inOutStatus: recvData[31] === 0 ? 'IN' : 'OUT' };
+  return { userId, attTime, inOutStatus };
 };
+
 
 module.exports.decodeUDPHeader = (header)=> {
     const commandId = header.readUIntLE(0,2)
