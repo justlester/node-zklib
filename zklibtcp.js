@@ -224,15 +224,16 @@ class ZKLibTCP {
 
       this.replyId++;
       const buf = createTCPHeader(COMMANDS.CMD_DATA_WRRQ, this.sessionId, this.replyId, reqData)
-      let reply = null
+      let reply = null;
 
       try {
         reply = await this.requestData(buf)
-
+        //console.log(reply.toString('hex'));
+        
       } catch (err) {
         reject(err)
       }
-
+      
       const header = decodeTCPHeader(reply.subarray(0, 16))
       switch (header.commandId) {
         case COMMANDS.CMD_DATA: {
@@ -246,7 +247,6 @@ class ZKLibTCP {
           const recvData = reply.subarray(16)
           const size = recvData.readUIntLE(1, 4)
 
-
           // We need to split the data to many chunks to receive , because it's to large
           // After receiving all chunk data , we concat it to TotalBuffer variable , that 's the data we want
           let remain = size % MAX_CHUNK
@@ -257,6 +257,7 @@ class ZKLibTCP {
 
           let totalBuffer = Buffer.from([])
           let realTotalBuffer = Buffer.from([])
+          let isDataOnGoing = false
 
 
           const timeout = 10000
@@ -269,12 +270,10 @@ class ZKLibTCP {
             // this.socket && this.socket.removeListener('data', handleOnData)
             timer && clearTimeout(timer)
             resolve({ data: replyData, err })
-
           }
 
 
           const handleOnData = (reply) => {
-
             if (checkNotEventTCP(reply)) return;
             clearTimeout(timer)
             timer = setTimeout(() => {
@@ -297,6 +296,7 @@ class ZKLibTCP {
                 realTotalBuffer = Buffer.from([])
 
                 totalPackets -= 1
+                isDataOnGoing = false;
                 cb && cb(replyData.length, size)
 
                 if (totalPackets <= 0) {
@@ -310,13 +310,17 @@ class ZKLibTCP {
             internalCallback(replyData, new Error('Socket is disconnected unexpectedly'))
           })
 
-          this.socket.on('data', handleOnData);
+          this.socket.on('data', handleOnData)
 
           for (let i = 0; i <= numberChunks; i++) {
             if (i === numberChunks) {
               this.sendChunkRequest(numberChunks * MAX_CHUNK, remain)
             } else {
               this.sendChunkRequest(i * MAX_CHUNK, MAX_CHUNK)
+            }
+            isDataOnGoing = true;
+            while (isDataOnGoing) {
+              await new Promise(r => setTimeout(r, 100))
             }
           }
 
