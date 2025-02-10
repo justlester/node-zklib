@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/caobo171/node-zklib#readme",
   "dependencies": {
+    "luxon": "^3.5.0",
     "node-zklib": "^1.0.0"
   }
 }

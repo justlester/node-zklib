@@ -168,6 +168,13 @@ class ZKLib {
 		);
 	}
 
+    async setTime(t) {
+        return await this.functionWrapper(
+            () => this.zklibTcp.setTime(t),
+            () => this.zklibUdp.setTime(t)
+        )
+    }
+
     async disableDevice(){
         return await this. functionWrapper(
             ()=>this.zklibTcp.disableDevice(),
